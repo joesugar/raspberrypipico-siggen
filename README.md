@@ -16,7 +16,7 @@ it's powered from the USB connection.  The prototype was built on strip
 board and is shown in the photo below.
 
 <div align="center">
-<img src="Images/siggen-image.png" 
+<img src="Images/siggen-image.jpg" 
 alt="Pi Pico Signal Generator Image" width="75%">
 </div>
 
