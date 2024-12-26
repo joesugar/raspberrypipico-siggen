@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+ 
+import argparse
+import json
+import serial
+import serial.tools.list_ports
+import typing
+
+def set_frequency(frequency_hz: int):
+    '''
+    Set the signal generator frequency, in Hz
+    '''
+    command = {
+        "command_number": 100,
+        "frequency": frequency_hz
+    }
+
+    response = issue_command(command)
+    if "error" in response:
+        print("Error: {}".format(response["error"]))
+    else:
+        print("OK")
+
+
+def get_frequency():
+    '''
+    Display the signal generator frequency, in Hz.
+    '''
+    field = "frequency"
+    label = "Frequency"
+    command = {
+        "command_number": 101
+    }
+
+    response = issue_command(command)
+    if "error" in response:
+        print("Error: {}".format(response["error"]))
+    else:
+        print("{}: {}".format(label, response[field]))
+
+
+def set_phase(phase_deg: float):
+    '''
+    Set the signal generator phase, in deg
+    '''
+    phase = int(phase_deg * 100.0)
+    command = {
+        "command_number": 102,
+        "phase": phase
+    }
+
+    response = issue_command(command)
+    if "error" in response:
+        print("Error: {}".format(response["error"]))
+    else:
+        print("OK")
+
+
+def get_phase():
+    '''
+    Display the signal generator phase, in deg.
+    '''
+    field = "phase"
+    label = "Phase"
+    command = {
+        "command_number": 103
+    }
+
+    response = issue_command(command)
+    if "error" in response:
+        print("Error: {}".format(response["error"]))
+    else:
+        print("{}: {}".format(label, response[field]/100.0))
+
+
+def enable_out():
+    '''
+    Enable the signal generator output
+    '''
+    command = {
+        "command_number": 104,
+        "enable_out": True
+    }
+
+    response = issue_command(command)
+    if "error" in response:
+        print("Error: {}".format(response["error"]))
+    else:
+        print("OK")
+
+
+def disable_out():
+    '''
+    Disable the signal generator output
+    '''
+    command = {
+        "command_number": 105,
+        "enable_out": False
+    }
+
+    response = issue_command(command)
+    if "error" in response:
+        print("Error: {}".format(response["error"]))
+    else:
+        print("OK")
+
+
+def get_state():
+    '''
+    Display the signal generator state.
+    '''
+    command = {
+        "command_number": 106
+    }
+
+    response = issue_command(command)
+    if "error" in response:
+        print("Error: {}".format(response["error"]))
+    else:
+        print("{}: {}".format("Frequency", response["frequency"]))
+        print("{}: {}".format("Phase    ", response["phase"] / 100.0))
+        print("{}: {}".format("Output   ", "Enabled" if response["enable_out"] else "Disabled"))
+
+
+def issue_command(command:dict) -> typing.Any:
+    '''
+    Issue a command to the signal generator.
+    '''
+    y = json.dumps(command).encode('utf-8')
+
+    ser.write(y)
+    ser.write(b'\r\n')
+
+    # Read back and check for error
+    #
+    ser.readline()
+    response = json.loads(ser.readline())
+    return response
+
+
+# Global values
+ser = None
+
+# Main method.
+#
+if __name__ == '__main__':
+
+    # Open the serial port.
+    #
+    ser = serial.Serial('/dev/ttyACM0')
+
+    # Define a command parser.
+    #
+    parser = argparse.ArgumentParser(prog="siggen")
+    subparsers = parser.add_subparsers(dest="command_name")
+
+    parser_set_frequency = subparsers.add_parser('set_frequency')
+    parser_set_frequency.add_argument('frequency', type=int, help='Set sig gen frequency')
+    parser_set_frequency.set_defaults(func = set_frequency)
+
+    parser_get_frequency = subparsers.add_parser('get_frequency')
+    parser_get_frequency.set_defaults(func = get_frequency)
+
+    parser_set_phase = subparsers.add_parser('set_phase')
+    parser_set_phase.add_argument('phase', type=float, help='Set sig gen phase')
+    parser_set_phase.set_defaults(func = set_phase)
+
+    parser_get_phase = subparsers.add_parser('get_phase')
+    parser_get_phase.set_defaults(func = get_phase)
+
+    parser_enable_out = subparsers.add_parser('enable_out')
+    parser_enable_out.set_defaults(func = enable_out)
+
+    parser_disable_out = subparsers.add_parser('disable_out')
+    parser_disable_out.set_defaults(func = disable_out)
+
+    parser_get_state = subparsers.add_parser('get_state')
+    parser_get_state.set_defaults(func = get_state)
+
+    args = parser.parse_args()   
+    if args.command_name == 'set_frequency':
+        args.func(args.frequency)
+    elif args.command_name == 'get_frequency':
+        args.func()
+    elif args.command_name == 'set_phase':
+        args.func(args.phase)
+    elif args.command_name == 'get_phase':
+        args.func()
+    elif args.command_name == "enable_out":
+        args.func()
+    elif args.command_name == "disable_out":
+        args.func()
+    elif args.command_name == 'get_state':
+        args.func()
+
+    # Close the port
+    #
+    ser.close()
